@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facturas de Venta</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>Facturas de Venta</h1>
+        </div>
+
+        <div id="mensaje-estado" class="alert d-none" role="alert"></div>
+
+        <!-- Sección 1: Formulario de búsqueda con filtros -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Filtros de Búsqueda</h5>
+                <form id="filtros-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="filtro-fecha-desde" class="form-label">Fecha Desde</label>
+                        <input type="date" class="form-control" id="filtro-fecha-desde">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtro-fecha-hasta" class="form-label">Fecha Hasta</label>
+                        <input type="date" class="form-control" id="filtro-fecha-hasta">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtro-estado" class="form-label">Estado</label>
+                        <select class="form-select" id="filtro-estado">
+                            <option value="">Todos</option>
+                            <option value="EMITIDA">EMITIDA</option>
+                            <option value="PAGADA">PAGADA</option>
+                            <option value="ANULADA">ANULADA</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="filtro-monto-minimo" class="form-label">Monto Mínimo</label>
+                        <input type="number" step="0.01" min="0" class="form-control" id="filtro-monto-minimo" placeholder="Ej: 1000">
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-outline-primary">Buscar</button>
+                        <button type="button" id="btn-limpiar" class="btn btn-outline-secondary">Limpiar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sección 2: Formulario de alta de factura -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Nueva Factura de Venta</h5>
+                <form id="factura-form">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <label for="numero" class="form-label">Número de Factura</label>
+                            <input type="number" min="1" class="form-control" id="numero" placeholder="Ej: 1002" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="fecha-emision" class="form-label">Fecha de Emisión</label>
+                            <input type="date" class="form-control" id="fecha-emision" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="punto-venta-id" class="form-label">Punto de Venta (ID)</label>
+                            <input type="number" min="1" class="form-control" id="punto-venta-id" placeholder="Ej: 1" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="condicion-iva-id" class="form-label">Condición IVA (ID)</label>
+                            <input type="number" min="1" class="form-control" id="condicion-iva-id" placeholder="Ej: 1" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="cliente-id" class="form-label">Cliente (ID)</label>
+                            <input type="number" min="1" class="form-control" id="cliente-id" placeholder="Ej: 1 (opcional)">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="tipo-moneda-id" class="form-label">Tipo Moneda (ID)</label>
+                            <input type="number" min="1" class="form-control" id="tipo-moneda-id" placeholder="Ej: 1 (opcional)">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="estado-factura" class="form-label">Estado</label>
+                            <select class="form-select" id="estado-factura">
+                                <option value="EMITIDA">EMITIDA</option>
+                                <option value="PAGADA">PAGADA</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <input type="text" class="form-control" id="observaciones" placeholder="Opcional">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
+                        <h6 class="mb-0">Detalles de la Factura</h6>
+                        <button type="button" id="btn-agregar-detalle" class="btn btn-success btn-sm">+ Agregar ítem</button>
+                    </div>
+
+                    <div class="table-responsive mb-3">
+                        <table class="table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 130px;">Artículo (ID)</th>
+                                    <th>Descripción</th>
+                                    <th style="width: 130px;">Cantidad</th>
+                                    <th style="width: 150px;">Precio Unitario</th>
+                                    <th style="width: 140px;">Bonif. (%)</th>
+                                    <th style="width: 150px;" class="text-end">Subtotal (c/IVA)</th>
+                                    <th style="width: 100px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="detalles-tbody">
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" class="text-end fw-bold">Importe Total:</td>
+                                    <td class="text-end fw-bold" id="importe-total">0,00</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Guardar Factura</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sección 3: Listado de comprobantes registrados -->
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Comprobantes Registrados</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Condición IVA</th>
+                                <th>Punto de Venta</th>
+                                <th class="text-end">Importe Total</th>
+                                <th class="text-center">Items</th>
+                                <th class="text-center">Estado</th>
+                                <th class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="facturas-tbody">
+                            <tr>
+                                <td colspan="9" class="text-center">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module" src="/dist/app.js"></script>
+</body>
+</html>
