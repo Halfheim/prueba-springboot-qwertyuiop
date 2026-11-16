@@ -2,23 +2,26 @@ import {
     FacturaDetalleRequestDTO,
     FacturaFiltrosDTO,
     FacturaReporteDTO,
-    FacturaRequestDTO
+    FacturaRequestDTO,
+    OpcionDTO,
+    ArticuloOpcionDTO
 } from './models/factura.dto.js';
 import { FacturaService } from './FacturaService.js';
+import { CatalogoService } from './Catalogoservice.js';
 
 const facturaService = new FacturaService();
+const catalogoService = new CatalogoService();
 
 const tbody = document.getElementById('facturas-tbody') as HTMLTableSectionElement;
 const filtrosForm = document.getElementById('filtros-form') as HTMLFormElement;
 const btnLimpiar = document.getElementById('btn-limpiar') as HTMLButtonElement;
 
 const facturaForm = document.getElementById('factura-form') as HTMLFormElement;
-const numeroInput = document.getElementById('numero') as HTMLInputElement;
 const fechaEmisionInput = document.getElementById('fecha-emision') as HTMLInputElement;
-const puntoVentaInput = document.getElementById('punto-venta-id') as HTMLInputElement;
-const condicionIvaInput = document.getElementById('condicion-iva-id') as HTMLInputElement;
-const clienteInput = document.getElementById('cliente-id') as HTMLInputElement;
-const tipoMonedaInput = document.getElementById('tipo-moneda-id') as HTMLInputElement;
+const puntoVentaInput = document.getElementById('punto-venta-id') as HTMLSelectElement;
+const condicionIvaInput = document.getElementById('condicion-iva-id') as HTMLSelectElement;
+const clienteInput = document.getElementById('cliente-id') as HTMLSelectElement;
+const tipoMonedaInput = document.getElementById('tipo-moneda-id') as HTMLSelectElement;
 const estadoFacturaInput = document.getElementById('estado-factura') as HTMLSelectElement;
 const observacionesInput = document.getElementById('observaciones') as HTMLInputElement;
 
@@ -29,6 +32,8 @@ const mensajeEstado = document.getElementById('mensaje-estado') as HTMLDivElemen
 
 // Estado de los renglones en memoria
 let detalles: FacturaDetalleRequestDTO[] = [];
+// Artículos disponibles (con su precio de lista), cargados desde el backend
+let articulos: ArticuloOpcionDTO[] = [];
 
 function mostrarMensaje(texto: string, esError: boolean = false): void {
     mensajeEstado.textContent = texto;
@@ -40,11 +45,46 @@ function ocultarMensaje(): void {
     mensajeEstado.textContent = '';
 }
 
+// Toma el yyyy-MM-dd tal cual viene, sin pasar por Date, para evitar corrimientos de zona horaria
 function formatearFecha(fechaStr: string | undefined): string {
     if (!fechaStr) return '-';
-    const fecha = new Date(fechaStr);
-    if (isNaN(fecha.getTime())) return fechaStr;
-    return fecha.toLocaleDateString('es-AR');
+    const partes = fechaStr.substring(0, 10).split('-');
+    if (partes.length !== 3) return fechaStr;
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+}
+
+function llenarSelect(select: HTMLSelectElement, opciones: OpcionDTO[], textoVacio: string): void {
+    select.innerHTML = '';
+    const vacia = document.createElement('option');
+    vacia.value = '';
+    vacia.textContent = textoVacio;
+    select.appendChild(vacia);
+    opciones.forEach(opcion => {
+        const el = document.createElement('option');
+        el.value = String(opcion.id);
+        el.textContent = opcion.etiqueta;
+        select.appendChild(el);
+    });
+}
+
+async function cargarCatalogos(): Promise<void> {
+    try {
+        const [puntosVenta, condicionesIva, tiposMoneda, clientes, listaArticulos] = await Promise.all([
+            catalogoService.obtenerPuntosVenta(),
+            catalogoService.obtenerCondicionesIva(),
+            catalogoService.obtenerTiposMoneda(),
+            catalogoService.obtenerClientes(),
+            catalogoService.obtenerArticulos()
+        ]);
+        articulos = listaArticulos;
+        llenarSelect(puntoVentaInput, puntosVenta, 'Seleccionar...');
+        llenarSelect(condicionIvaInput, condicionesIva, 'Seleccionar...');
+        llenarSelect(tipoMonedaInput, tiposMoneda, 'Sin especificar');
+        llenarSelect(clienteInput, clientes, 'Consumidor Final');
+    } catch (error) {
+        mostrarMensaje('No se pudieron cargar los listados: ' + (error as Error).message, true);
+        console.error(error);
+    }
 }
 
 function formatearMoneda(valor: number | undefined): string {
@@ -69,11 +109,12 @@ function actualizarImporteTotal(): void {
 }
 
 function crearDetalleVacio(): FacturaDetalleRequestDTO {
+    const primero = articulos[0];
     return {
-        articuloId: 1,
-        descripcion: '',
+        articuloId: primero ? primero.id : 0,
+        descripcion: primero ? primero.descripcion : '',
         cantidad: 1,
-        precioUnitario: 0,
+        precioUnitario: primero ? primero.precio : 0,
         porcentajeBonificacion: 0
     };
 }
@@ -107,10 +148,29 @@ function crearFilaDetalle(detalle: FacturaDetalleRequestDTO, indice: number): HT
     const fila = document.createElement('tr');
 
     const celdaArticulo = document.createElement('td');
-    const inputArticulo = crearInputNumber(detalle.articuloId, '1', '1', (valor) => {
-        detalles[indice].articuloId = valor;
+    const selectArticulo = document.createElement('select');
+    selectArticulo.className = 'form-select';
+    selectArticulo.required = true;
+    articulos.forEach(art => {
+        const opcion = document.createElement('option');
+        opcion.value = String(art.id);
+        opcion.textContent = art.etiqueta;
+        selectArticulo.appendChild(opcion);
     });
-    celdaArticulo.appendChild(inputArticulo);
+    selectArticulo.value = String(detalle.articuloId);
+    // Al elegir un artículo se completan descripción y precio de lista (ambos siguen editables)
+    selectArticulo.addEventListener('change', () => {
+        const art = articulos.find(a => a.id === parseInt(selectArticulo.value, 10));
+        if (!art) return;
+        detalles[indice].articuloId = art.id;
+        detalles[indice].descripcion = art.descripcion;
+        detalles[indice].precioUnitario = art.precio;
+        inputDescripcion.value = art.descripcion;
+        inputPrecio.value = art.precio.toString();
+        celdaSubtotal.textContent = formatearMoneda(calcularSubtotal(detalles[indice]));
+        actualizarImporteTotal();
+    });
+    celdaArticulo.appendChild(selectArticulo);
 
     const celdaDescripcion = document.createElement('td');
     const inputDescripcion = document.createElement('input');
@@ -290,9 +350,12 @@ facturaForm.addEventListener('submit', async (evento) => {
         mostrarMensaje('Debe agregar al menos un detalle a la factura.', true);
         return;
     }
+    if (detalles.some(d => !d.articuloId)) {
+        mostrarMensaje('Cada ítem debe tener un artículo seleccionado.', true);
+        return;
+    }
 
     const nuevaFactura: FacturaRequestDTO = {
-        numero: parseInt(numeroInput.value, 10),
         fechaEmision: fechaEmisionInput.value,
         puntoVentaId: parseInt(puntoVentaInput.value, 10),
         condicionIvaId: parseInt(condicionIvaInput.value, 10),
@@ -318,7 +381,7 @@ facturaForm.addEventListener('submit', async (evento) => {
 
     try {
         const creada = await facturaService.crearFactura(nuevaFactura);
-        mostrarMensaje(`Factura ${creada.numeroFactura} creada exitosamente.`);
+        mostrarMensaje(`Factura ${creada.numeroFactura ?? ''} creada exitosamente.`);
         reiniciarFormularioAlta();
         await cargarFacturas();
     } catch (error) {
@@ -328,5 +391,8 @@ facturaForm.addEventListener('submit', async (evento) => {
 });
 
 // Inicialización de la vista
-reiniciarFormularioAlta();
-cargarFacturas();
+(async () => {
+    await cargarCatalogos();
+    reiniciarFormularioAlta();
+    await cargarFacturas();
+})();

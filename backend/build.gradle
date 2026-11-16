@@ -6,6 +6,11 @@ plugins {
 
 group = 'com.tp'
 version = '1.0'
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
 
 repositories {
     mavenCentral()
@@ -25,4 +30,8 @@ dependencies {
 
     // 4. iText para exportar PDFs
     implementation 'com.itextpdf:itextpdf:5.5.13.3'
+
+    // 5. BouncyCastle para firmar el TRA (WSAA de ARCA)
+    implementation 'org.bouncycastle:bcpkix-jdk18on:1.78.1'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
 }

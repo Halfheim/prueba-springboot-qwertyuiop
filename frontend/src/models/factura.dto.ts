@@ -36,3 +36,15 @@ export interface FacturaFiltrosDTO {
     estado?: string;
     montoMinimo?: string;
 }
+
+export interface OpcionDTO {
+    id: number;
+    etiqueta: string;
+}
+
+export interface ArticuloOpcionDTO {
+    id: number;
+    etiqueta: string;
+    descripcion: string;
+    precio: number;
+}

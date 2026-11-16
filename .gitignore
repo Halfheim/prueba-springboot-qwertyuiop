@@ -4,6 +4,8 @@
 .gradle/
 build/
 **/build/
+bin/
+**/bin/
 # Compiled class & package files
 *.class
 *.jar

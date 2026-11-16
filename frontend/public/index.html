@@ -55,28 +55,24 @@
                 <form id="factura-form">
                     <div class="row g-3 mb-3">
                         <div class="col-md-3">
-                            <label for="numero" class="form-label">Número de Factura</label>
-                            <input type="number" min="1" class="form-control" id="numero" placeholder="Ej: 1002" required>
-                        </div>
-                        <div class="col-md-3">
                             <label for="fecha-emision" class="form-label">Fecha de Emisión</label>
                             <input type="date" class="form-control" id="fecha-emision" required>
                         </div>
                         <div class="col-md-3">
                             <label for="punto-venta-id" class="form-label">Punto de Venta (ID)</label>
-                            <input type="number" min="1" class="form-control" id="punto-venta-id" placeholder="Ej: 1" required>
+                            <select class="form-select" id="punto-venta-id" required></select>
                         </div>
                         <div class="col-md-3">
                             <label for="condicion-iva-id" class="form-label">Condición IVA (ID)</label>
-                            <input type="number" min="1" class="form-control" id="condicion-iva-id" placeholder="Ej: 1" required>
+                            <select class="form-select" id="condicion-iva-id" required></select>
                         </div>
                         <div class="col-md-3">
                             <label for="cliente-id" class="form-label">Cliente (ID)</label>
-                            <input type="number" min="1" class="form-control" id="cliente-id" placeholder="Ej: 1 (opcional)">
+                            <select class="form-select" id="cliente-id"></select>
                         </div>
                         <div class="col-md-3">
                             <label for="tipo-moneda-id" class="form-label">Tipo Moneda (ID)</label>
-                            <input type="number" min="1" class="form-control" id="tipo-moneda-id" placeholder="Ej: 1 (opcional)">
+                            <select class="form-select" id="tipo-moneda-id" required></select>
                         </div>
                         <div class="col-md-3">
                             <label for="estado-factura" class="form-label">Estado</label>
@@ -100,7 +96,7 @@
                         <table class="table">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width: 130px;">Artículo (ID)</th>
+                                    <th style="width: 260px;">Artículo</th>
                                     <th>Descripción</th>
                                     <th style="width: 130px;">Cantidad</th>
                                     <th style="width: 150px;">Precio Unitario</th>
